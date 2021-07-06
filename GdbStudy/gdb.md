@@ -722,7 +722,7 @@ main () at stepDebug.c:27
 */
 (gdb) 
 ~~~
-### 跳过执行 - skip
+#### 跳过执行 - skip
 * 使用`skip`可以在`step`命令时跳过一些不想关注的函数
 ~~~cpp
 // skip函数
