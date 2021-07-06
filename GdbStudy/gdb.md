@@ -3,6 +3,8 @@ GDB是GNU工具链中的调试软件，能够用于调试C、C++、java、go等�
 
 ## 资料来源
 https://zhuanlan.zhihu.com/p/74897601
+http://kuring.me/post/cgdb/
+https://www.jianshu.com/p/998dd862253a
 
 ## 启动调试
 #### 前提
@@ -262,22 +264,31 @@ $4 = (int *) 0x55555555487d <__libc_csu_init+77>
 ~~~
 #### 打印指针指向内容
 * 直接打印指针变量值，打印出来的是指针地址
-* 若要想打印指针指向的内容，需要解引用，若是指针指向的数组则只能打印出第一个值
-* 指针指向的数组要打印多个值，需要@后面加上长度/变量值
-* 可定义一个Unix环境变量，来多次输出值
-* 可以使用下标去进行打印
+
+
+
+
 ~~~cpp
 // 直接打印指针变量值
 (gdb) p d 
 $15 = (int *) 0x555555756260
+~~~
+* 若要想打印指针指向的内容，需要解引用，若是指针指向的数组则只能打印出第一个值
+~~~cpp
 // 指针指向的数组则只能打印出第一个值
 (gdb) p *d
 $16 = 0
+~~~
+* 指针指向的数组要打印多个值，需要@后面加上长度/变量值
+~~~cpp
 // 指针指向的数组要打印多个值，需要@后面加上长度/变量值
 (gdb) p *d@a
 $17 = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
 (gdb) p *d@10
 $18 = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
+~~~
+* 可定义一个Unix环境变量，来多次输出值
+~~~cpp
 // 定义一个Unix环境变量，来多次输出值
 (gdb) set $index = 0
 (gdb) p b[$index++]
@@ -290,6 +301,9 @@ $21 = 3
 $22 = 4
 (gdb) p b[$index++] // 超出数组范围了
 $23 = 1431652400
+~~~
+* 可以使用下标去进行打印
+~~~cpp
 // 可以使用下标去进行打印
 (gdb) p b[0]
 $31 = 1
@@ -304,8 +318,830 @@ $34 = 4
 <font color='red'> 此部分没有实际用到过，暂定。 </font>
 
 #### 查看内存内容
+<font color='red'> 此部分没有实际用到过，暂定。 </font>
 
+#### 自动显示变量内容
+* 在运行到断点处时，我们希望程序继续运行会一直自动显示某个变量的值，使用display命令
+~~~cpp
+(gdb) b 19
+(gdb) run
+(gdb) display *d@10
+// 输出 1: *d@10 = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
+~~~
+* 想要查看哪些变量设置了display
+~~~cpp
+(gdb) info display
+/* 输出
+Auto-display expressions now in effect:
+Num Enb Expression
+1:   n  *d@10
+*/
+~~~
+* 暂时不需要自动查看变量值的时候，可以去使能，想要时继续开启
+~~~cpp
+(gdb) disable display 编号  // 去编号使能
+(gdb) disable display       // 去除所有编号使能
+(gdb) enable display 编号   // 使能编号
+(gdb) enable display        // 使能所遇编号
+~~~
+* 相处想要自动查看的变量时，可以使用delete清理
+~~~cpp
+(gdb) delete display 编号   // 清除编号
+(gdb) delete display        // 清除所有编号
+~~~
+#### 查看寄存器内容
+<font color='red'> 此部分没有实际用到过，暂定。 </font>
 
+## 单步调试
+#### 前言
+本文所说的单步调试，不是纯粹意义上的单步调试，而是按照自己的要求来执行代码。
+#### 查看程序代码
+* 可以使用`list`指令来查看源代码，简写成`l`
+~~~cpp
+(gdb) l
+/* 输出
+8
+9       int count(int num)
+10      {
+11          int i = 0;
+12          if(0 > num) return 0;
+13          while(i < num){
+14              printf("%d\n",i);
+15              ++i;
+16          }
+17          return i;
+*/
+(gdb) l
+/* 输出
+18      }
+19
+20      int main(void)
+21      {
+22          int a = 3;
+23          int b = 7;
+24          printf("it will calc a + b\n");
+25          int c = add(a,b);
+26          printf("%d + %d = %d\n",a,b,c);
+27          count(c);
+*/
+(gdb) l
+/* 输出
+28          return 0;
+29      }
+30
+*/
+(gdb) 
+~~~
+#### 单步执行 - next
+* 可以使用`next`指令来在程序断住时候继续执行下一条语句，简写成`n`
+* 如果在`n`后面跟上数字num时，相当于执行该语句num次，就达到了执行n行的效果了
+~~~cpp
+(gdb) l
+/* 输出
+8
+9       int count(int num)
+10      {
+11          int i = 0;
+12          if(0 > num) return 0;
+13          while(i < num){
+14              printf("%d\n",i);
+15              ++i;
+16          }
+17          return i;
+*/
+(gdb) l
+/* 输出
+18      }
+19
+20      int main(void)
+21      {
+22          int a = 3;
+23          int b = 7;
+24          printf("it will calc a + b\n");
+25          int c = add(a,b);
+26          printf("%d + %d = %d\n",a,b,c);
+27          count(c);
+*/
+(gdb) l
+/* 输出
+28          return 0;
+29      }
+30
+*/
+(gdb) b 22
+// 输出 Breakpoint 1 at 0x6f2: file stepDebug.c, line 22.
+(gdb) run
+/* 输出
+Starting program: /home/swin/MyGit/GdbStudy/4-StepDebug/stepDebug.out 
 
+Breakpoint 1, main () at stepDebug.c:22
+22          int a = 3;
+*/
+(gdb) display c
+// 输出 1: c = 0
+(gdb) n
+/* 输出
+23          int b = 7;
+1: c = 0
+*/
+(gdb) n 2
+/* 输出
+it will calc a + b
+25          int c = add(a,b);
+1: c = 0
+*/
+(gdb) n
+/* 输出
+26          printf("%d + %d = %d\n",a,b,c);
+1: c = 10
+*/
+~~~
+#### 单步进入 - step
+* 如果想要步入函数内部，可以使用`step`指令来实现，简写成`s`
+* `s`命令会尝试进入函数，如果没有函数可以进入效果同`n`，后面可加执行步数num
+* 需要跳出函数执行/函数无源码需要跳出，使用`finish`，会完成该函数的调用并返回相应结果
+~~~cpp
+(gdb) l
+/* 输出
+8
+9       int count(int num)
+10      {
+11          int i = 0;
+12          if(0 > num) return 0;
+13          while(i < num){
+14              printf("%d\n",i);
+15              ++i;
+16          }
+17          return i;
+*/
+(gdb) l
+/* 输出
+18      }
+19
+20      int main(void)
+21      {
+22          int a = 3;
+23          int b = 7;
+24          printf("it will calc a + b\n");
+25          int c = add(a,b);
+26          printf("%d + %d = %d\n",a,b,c);
+27          count(c);
+*/
+(gdb) l
+/* 输出
+28          return 0;
+29      }
+30
+*/
+(gdb) b 24
+// 输出 Breakpoint 1 at 0x700: file stepDebug.c, line 24.
+(gdb) run
+/* 输出
+Starting program: /home/swin/MyGit/GdbStudy/4-StepDebug/stepDebug.out 
 
+Breakpoint 1, main () at stepDebug.c:24
+24          printf("it will calc a + b\n");
+*/
+(gdb) s
+/* 输出
+_IO_puts (str=0x5555555547d8 "it will calc a + b") at ioputs.c:33
+33      ioputs.c: No such file or directory.
+*/
+(gdb) finish
+/* 输出
+Run till exit from #0  _IO_puts (str=0x5555555547d8 "it will calc a + b") at ioputs.c:33
+it will calc a + b
+main () at stepDebug.c:25
+25          int c = add(a,b);
+Value returned is $1 = 19
+*/
+(gdb) n
+// 输出 26          printf("%d + %d = %d\n",a,b,c);
+(gdb) p c
+// 输出 $2 = 10
+(gdb) n
+/* 输出
+3 + 7 = 10
+27          count(c);
+*/
+(gdb) s
+/* 输出
+count (num=10) at stepDebug.c:11
+11          int i = 0;
+*/
+(gdb) display i
+// 输出 1: i = 10
+(gdb) s 4
+/* 输出 
+__printf (format=0x5555555547d4 "%d\n") at printf.c:28
+28      printf.c: No such file or directory.
+*/
+(gdb) finish
+/* 输出
+Run till exit from #0  __printf (format=0x5555555547d4 "%d\n") at printf.c:28
+0
+count (num=10) at stepDebug.c:15
+15              ++i;
+1: i = 0
+Value returned is $3 = 2
+*/
+(gdb) n
+/* 输出
+13          while(i < num){
+1: i = 1
+*/
+(gdb) finish
+/* 输出
+Run till exit from #0  count (num=10) at stepDebug.c:13
+1
+2
+3
+4
+5
+6
+7
+8
+9
+main () at stepDebug.c:28
+28          return 0;
+Value returned is $4 = 10
+*/
+(gdb) n
+// 输出 29      }
+(gdb) n
+/* 输出
+__libc_start_main (main=0x5555555546ea <main>, argc=1, argv=0x7fffffffe488, init=<optimized out>, fini=<optimized out>, rtld_fini=<optimized out>, 
+    stack_end=0x7fffffffe478) at ../csu/libc-start.c:344
+344     ../csu/libc-start.c: No such file or directory.
+*/
+(gdb) 
+~~~
+#### 继续执行到下一个断点 - continue
+* 若想要执行到下一个断点，可以使用`continue`命令,简写为`c`,或使用`fg`
+* 若想要执行到接下去的N个断点，可以使用命令`c 数字`
+~~~cpp
+(gdb) l
+/* 输出
+8
+9       int count(int num)
+10      {
+11          int i = 0;
+12          if(0 > num) return 0;
+13          while(i < num){
+14              printf("%d\n",i);
+15              ++i;
+16          }
+17          return i;
+*/
+(gdb) l
+/* 输出
+18      }
+19
+20      int main(void)
+21      {
+22          int a = 3;
+23          int b = 7;
+24          printf("it will calc a + b\n");
+25          int c = add(a,b);
+26          printf("%d + %d = %d\n",a,b,c);
+27          count(c);
+*/
+(gdb) l
+/* 输出
+28          return 0;
+29      }
+30
+*/
+(gdb) b 15
+// 输出 Breakpoint 1 at 0x6d9: file stepDebug.c, line 15.
+(gdb) run
+/* 输出
+Starting program: /home/swin/MyGit/GdbStudy/4-StepDebug/stepDebug.out 
+it will calc a + b
+3 + 7 = 10
+0
 
+Breakpoint 1, count (num=10) at stepDebug.c:15
+15              ++i;
+*/
+(gdb) c
+/* 输出
+Continuing.
+1
+
+Breakpoint 1, count (num=10) at stepDebug.c:15
+15              ++i;
+*/
+(gdb) c
+/* 输出
+Continuing.
+2
+
+Breakpoint 1, count (num=10) at stepDebug.c:15
+15              ++i;
+*/
+(gdb) c
+/* 输出
+Continuing.
+3
+
+Breakpoint 1, count (num=10) at stepDebug.c:15
+15              ++i;
+*/
+(gdb) c 4
+/* 输出
+Will ignore next 3 crossings of breakpoint 1.  Continuing.
+4
+5
+6
+7
+
+Breakpoint 1, count (num=10) at stepDebug.c:15
+15              ++i;
+*/
+(gdb) fg
+/* 输出
+Continuing.
+8
+
+Breakpoint 1, count (num=10) at stepDebug.c:15
+15              ++i;
+*/
+(gdb) 
+~~~
+#### 继续运行到指定位置 - until
+* 在断点处程序暂停，若想临时运行到指定行，可以使用`until`指令，简称`u`，效果是利用临时断点功能，执行到该处
+~~~cpp
+(gdb) l
+/* 输出
+8
+9       int count(int num)
+10      {
+11          int i = 0;
+12          if(0 > num) return 0;
+13          while(i < num){
+14              printf("%d\n",i);
+15              ++i;
+16          }
+17          return i;
+*/
+(gdb) l
+/* 输出
+18      }
+19
+20      int main(void)
+21      {
+22          int a = 3;
+23          int b = 7;
+24          printf("it will calc a + b\n");
+25          int c = add(a,b);
+26          printf("%d + %d = %d\n",a,b,c);
+27          count(c);
+*/
+(gdb) l
+/* 输出
+28          return 0;
+29      }
+30
+*/
+(gdb) b 23
+// 输出 Breakpoint 1 at 0x6f9: file stepDebug.c, line 23.
+(gdb) run
+/* 输出
+Starting program: /home/swin/MyGit/GdbStudy/4-StepDebug/stepDebug.out 
+
+Breakpoint 1, main () at stepDebug.c:23
+23          int b = 7;
+*/
+(gdb) u 27
+/* 输出
+it will calc a + b
+3 + 7 = 10
+main () at stepDebug.c:27
+27          count(c);
+*/
+(gdb) 
+~~~
+### 跳过执行 - skip
+* 使用`skip`可以在`step`命令时跳过一些不想关注的函数
+~~~cpp
+// skip函数
+
+(gdb) l
+/* 输出
+8
+9       int count(int num)
+10      {
+11          int i = 0;
+12          if(0 > num) return 0;
+13          while(i < num){
+14              printf("%d\n",i);
+15              ++i;
+16          }
+17          return i;
+*/
+(gdb) l
+/* 输出
+18      }
+19
+20      int main(void)
+21      {
+22          int a = 3;
+23          int b = 7;
+24          printf("it will calc a + b\n");
+25          int c = add(a,b);
+26          printf("%d + %d = %d\n",a,b,c);
+27          count(c);
+*/
+(gdb) l
+/* 输出
+28          return 0;
+29      }
+30
+*/
+(gdb) b 27
+// 输出 Breakpoint 1 at 0x73a: file stepDebug.c, line 27.
+(gdb) skip function count
+// 输出 Function count will be skipped when stepping.
+(gdb) info skip
+/* 输出
+Num   Enb Glob File                 RE Function
+1     y      n <none>                n count
+*/
+(gdb) run
+/* 输出
+Starting program: /home/swin/MyGit/GdbStudy/4-StepDebug/stepDebug.out 
+it will calc a + b
+3 + 7 = 10
+
+Breakpoint 1, main () at stepDebug.c:27
+27          count(c);
+*/
+(gdb) s
+/* 输出
+0
+1
+2
+3
+4
+5
+6
+7
+8
+9
+28          return 0;
+*/
+(gdb) s
+// 输出 29      }
+(gdb)
+~~~
+* 使用`skip`可以在`step`命令时跳过一些不想关注的某个文件中的函数
+~~~cpp
+// skip 文件
+(gdb) skip file stepDebug.c
+// 输出 File stepDebug.c will be skipped when stepping.
+(gdb) b 27
+// 输出 Breakpoint 1 at 0x73a: file stepDebug.c, line 27.
+(gdb) run
+/* 输出
+Starting program: /home/swin/MyGit/GdbStudy/4-StepDebug/stepDebug.out 
+it will calc a + b
+3 + 7 = 10
+
+Breakpoint 1, main () at stepDebug.c:27
+27          count(c);
+*/
+(gdb) s
+/* 输出
+0
+1
+2
+3
+4
+5
+6
+7
+8
+9
+28          return 0;
+*/
+(gdb) 
+~~~
+* `skip`同`break`、`display`，都是有info信息的
+~~~cpp
+(gdb) info skip            // 查看skip信息
+(gdb) skip enable skip值   // 使能某个skip标志
+(gdb) skip enable          // skip标志全部使能
+(gdb) skip disable skip值  // 去使能某个skip标志
+(gdb) skip disable         // 去使能属于skip标志
+(gdb) skip delete skip值   // 删除某个skip标志
+(gdb) skip delete          // 删除所有skip标志
+~~~
+
+## 源码查看
+#### 前言
+调试过程中难免要查看相应的源码，如果打开另一个窗口未免显得过于麻烦，本节介绍在GDB模式下对源码进行查看和编辑
+#### 直接打印源码
+* `list`命令就是直接打印源码，简称为`l`
+* 可以多次输出`l`来打印接下来部分的源码(只会打印main入口)
+* 也可以使用`l +`和`l -`来打印上次的部分源码后部分/前部分输出
+~~~cpp
+(gdb) l
+/* 输出
+1       #include <stdio.h>
+2       #include "test.h"
+3
+4       int main(void)
+5       {
+6           printf("it will print from 5 to 1\n");
+7           printNum(5);
+8           printf("print end\n");
+9
+10          printf("it will print from 1 to 5\n");
+*/
+(gdb) l
+/* 输出
+11          printNum1(5);
+12          printf("print end\n");
+13          return 0;
+14      }
+15
+*/
+(gdb) l -
+/* 输出
+1       #include <stdio.h>
+2       #include "test.h"
+3
+4       int main(void)
+5       {
+6           printf("it will print from 5 to 1\n");
+7           printNum(5);
+8           printf("print end\n");
+9
+10          printf("it will print from 1 to 5\n");
+*/
+(gdb) l +
+/* 输出
+11          printNum1(5);
+12          printf("print end\n");
+13          return 0;
+14      }
+15
+*/
+(gdb) 
+~~~
+#### 列出指定行附近的源码
+* `l 行号`可以列出以指定行为中心附近的源码
+~~~cpp
+(gdb) l 10
+/* 输出
+5       {
+6           printf("it will print from 5 to 1\n");
+7           printNum(5);
+8           printf("print end\n");
+9
+10          printf("it will print from 1 to 5\n");
+11          printNum1(5);
+12          printf("print end\n");
+13          return 0;
+14      }
+*/
+(gdb) 
+~~~
+#### 列出指定函数附近的源码
+* `l 函数名`可以列出指定函数附近的源码
+~~~cpp
+(gdb) l printNum
+/* 输出
+1       #include "test.h"
+2
+3       void printNum(int n)
+4       {
+5           if(n < 0) return;
+6           while(n > 0)
+7           {
+8               printf("%d\n",n);
+9               n--;
+10          }
+*/
+(gdb) 
+~~~
+#### 设置源码一次性列出的行数
+* 可以使用`listsize`属性来修改每次列出的行数
+~~~cpp
+(gdb) set listsize 30
+(gdb) show listsize
+// 输出 Number of source lines gdb will list by default is 30.
+(gdb) l
+/* 输出
+1       #include <stdio.h>
+2       #include "test.h"
+3
+4       int main(void)
+5       {
+6           printf("it will print from 5 to 1\n");
+7           printNum(5);
+8           printf("print end\n");
+9
+10          printf("it will print from 1 to 5\n");
+11          printNum1(5);
+12          printf("print end\n");
+13          return 0;
+14      }
+15
+*/
+(gdb) 
+~~~
+* 可以设置`listsize`为`0`或`unlimited`,这样源码列出就无限制
+~~~cpp
+(gdb) set listsize 0
+(gdb) l
+/* 输出
+1       #include <stdio.h>
+2       #include "test.h"
+3
+4       int main(void)
+5       {
+6           printf("it will print from 5 to 1\n");
+7           printNum(5);
+8           printf("print end\n");
+9
+10          printf("it will print from 1 to 5\n");
+11          printNum1(5);
+12          printf("print end\n");
+13          return 0;
+14      }
+15
+*/
+(gdb)
+~~~
+#### 列出指定行之间的源码
+* `list 起始行,终止行`可以输出起始行到终止行之间的源码
+* `list 起始行,`或者`list ,终止行`可以输出以起始行为开头/终止行为结尾，指定行数的源码
+~~~cpp
+(gdb) l 5,10
+/* 输出
+5       {
+6           printf("it will print from 5 to 1\n");
+7           printNum(5);
+8           printf("print end\n");
+9
+10          printf("it will print from 1 to 5\n");
+*/
+(gdb) 
+
+(gdb) l 5,
+/* 输出
+5       {
+6           printf("it will print from 5 to 1\n");
+7           printNum(5);
+8           printf("print end\n");
+9
+10          printf("it will print from 1 to 5\n");
+11          printNum1(5);
+12          printf("print end\n");
+13          return 0;
+14      }
+*/
+(gdb) 
+
+(gdb) l ,15
+/* 输出
+6           printf("it will print from 5 to 1\n");
+7           printNum(5);
+8           printf("print end\n");
+9
+10          printf("it will print from 1 to 5\n");
+11          printNum1(5);
+12          printf("print end\n");
+13          return 0;
+14      }
+15
+*/
+(gdb) 
+~~~
+#### 列出指定文件的源码
+* 若没有指示会默认列出main.c的源码，如果想要看指定文件的源码可以使用`l location`,
+* 其中location可以是`文件名:行号`
+~~~cpp
+(gdb) l test.c:10
+/* 输出
+5           if(n < 0) return;
+6           while(n > 0)
+7           {
+8               printf("%d\n",n);
+9               n--;
+10          }
+11      }
+12
+13      void printNum1(int n)
+14      {
+~~~
+* 其中location可以是`函数名`
+~~~cpp
+(gdb) l printNum1
+/* 输出
+9               n--;
+10          }
+11      }
+12
+13      void printNum1(int n)
+14      {
+15          if(n < 0) return;
+16          int i = 1;
+17          while(i <= n)
+18          {
+*/
+(gdb) 
+~~~
+* 其中location可以是`文件名:函数名`
+~~~cpp
+(gdb) l test.c:printNum
+/* 输出
+1       #include "test.h"
+2
+3       void printNum(int n)
+4       {
+5           if(n < 0) return;
+6           while(n > 0)
+7           {
+8               printf("%d\n",n);
+9               n--;
+10          }
+*/
+(gdb) 
+~~~
+* 其中location可以是`文件名:行号,文件名:行号`
+~~~cpp
+(gdb) l test.c:5,test.c:15
+/* 输出
+5           if(n < 0) return;
+6           while(n > 0)
+7           {
+8               printf("%d\n",n);
+9               n--;
+10          }
+11      }
+12
+13      void printNum1(int n)
+14      {
+15          if(n < 0) return;
+*/
+(gdb) 
+~~~
+#### 指定源码路径
+###### 源码被移走
+<font color='red'> 此部分没有实际用到过，暂定。 </font>
+
+###### 更换源码目录
+<font color='red'> 此部分没有实际用到过，暂定。 </font>
+
+#### 编辑源码
+* 在某些时候GDB模式下设置了很多东西，不想退出想要直接在GDB模式下修改代码，可以使用下述方式解决。
+~~~cpp
+// 设置默认编辑器为vim
+$ EDITOR=/usr/bin/vim
+$ export EDITOR
+
+// 如果你不知道vim在哪里，可以用下述指令进行查询
+$ whereis vim
+/* 输出
+vim: /usr/bin/vim /usr/bin/vim.tiny /usr/bin/vim.basic /usr/bin/vim.gnome /etc/vim /usr/share/vim /usr/share/man/man1/vim.1.gz
+*/
+$ which vim
+// 输出 /usr/bin/vim
+~~~
+* 可以使用`edit location进行编辑程序`
+~~~cpp
+(gdb)edit 3        // 编辑当前默认文件第三行
+(gdb)edit printNum // 编辑printNum函数
+(gdb)edit test.c:5 // 编辑test.c第五行
+~~~
+* 编辑完后，一定要重新进行编译，否则还是原先的out文件，这里为了在GDB模式下执行shell指令，
+一定在前加上关键词shell，来表明这是一条shell指令。这样就不用退出GDB模式来进行编译程序了。
+~~~cpp
+(gdb)shell gcc -g main.c test.c -o readResouce.out
+~~~
+
+## 可视化界面
+#### 选择原因
+在使用gdb调试代码的时候会因为查看不到代码而烦恼，这是因为gdb的list不好用。可以选择gdb -tui或者cgdb来进行调试
+#### gdb tui模式
+gdb -tui模式可以解决边调试边list的缺陷，但是它仍有两个缺陷：  
+(1) 语法未高亮
+(2) 使用ssh登录远程服务器时，源码布局不能自动刷新，需要`clrt + l`来进行刷新
+#### cgdb模式
+就gdb tui模式下源码布局不能自动刷新的问题，cgdb解决了这个问题
+* 安装 `sudo apt-get install cgdb`
+* 常用命令
+~~~cpp
+ESC：        切换焦点到源码模式，在该界面中可以使用vi的常用命令
+i：          切换焦点到gdb模式
+I:           切换焦点到TTY模式(若打开了TTY模式)
+o：          在源码模式中，打开文件对话框，选择要显示的代码文件，按ESC取消
+空格：       在源码模式中，在当前行设置一个断点
+-/=：        在源码模式中，上移/下移源码界面
+shift + t：  打开/关闭TTY窗口(TTY窗口可以显示程序的输出/输入参数)
+shift + -/=：在源码模式中，上移/下移TTY界面
+~~~
+* 注意cgdb不能使用`edit`命令。
