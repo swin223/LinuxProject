@@ -77,6 +77,7 @@ void lt(epoll_event* events,int number,int epollfd,int listenfd)
 // ET模式工作流程
 void et(epoll_event* events,int number,int epollfd,int listenfd)
 {
+    printf("enter et function and number = %d\n",number);
     char buf[BUFFER_SIZE];
     for(int i = 0;i < number;++i)
     {
@@ -85,6 +86,7 @@ void et(epoll_event* events,int number,int epollfd,int listenfd)
         // 表示有socket接入
         if(sockfd == listenfd)
         {
+            printf("enter socket accept\n");
             struct sockaddr_in client_address;
             socklen_t client_addrlength = sizeof(client_address);
             int connfd = accept(listenfd,(struct sockaddr*)&client_address,&client_addrlength);
@@ -112,6 +114,7 @@ void et(epoll_event* events,int number,int epollfd,int listenfd)
                 }
                 else if(ret == 0)
                 {
+                    printf("exit\n");
                     close(sockfd);
                 }
                 else

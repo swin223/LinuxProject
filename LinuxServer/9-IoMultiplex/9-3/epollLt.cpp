@@ -41,6 +41,7 @@ void addfd(int epollfd,int fd,bool enable_et)
 // LT模式的工作流程
 void lt(epoll_event* events,int number,int epollfd,int listenfd)
 {
+    printf("enter it function and number = %d\n",number);
     char buf[BUFFER_SIZE];
     for(int i = 0;i < number;++i)
     {
@@ -49,6 +50,7 @@ void lt(epoll_event* events,int number,int epollfd,int listenfd)
         // 表示有socket接入
         if(sockfd == listenfd)
         {
+            printf("enter socket accept\n");
             struct sockaddr_in client_address;
             socklen_t client_addrlength = sizeof(client_address);
             int connfd = accept(listenfd,(struct sockaddr*)&client_address,&client_addrlength);
@@ -62,6 +64,7 @@ void lt(epoll_event* events,int number,int epollfd,int listenfd)
             int ret = recv(sockfd,buf,BUFFER_SIZE - 1,0);
             if(ret <= 0)
             {
+                printf("exit\n");
                 close(sockfd);
                 continue;
             }
