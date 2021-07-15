@@ -131,6 +131,7 @@ if/end/endif/endfunction补全
 ##### 插入模式
 * **i** 在光标处进入插入模式
 * **:e <filename> / open <filename>** 另起一个buffer打开文件
+* **复制 + 粘贴** V进入可视化模式后y复制多行p粘贴
 
 ##### 窗口切分
 * **sp <filename>** 横向切分窗口并打开文件
