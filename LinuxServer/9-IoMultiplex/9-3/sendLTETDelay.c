@@ -39,7 +39,7 @@ int main(int argc, char *argv[])
     {
         send(sockfd,message,strlen(message),0);
         // 睡眠3s后再继续发送
-        sleep(3);
+        sleep(10);
         send(sockfd,addMessage,strlen(addMessage),0);
     }
 
