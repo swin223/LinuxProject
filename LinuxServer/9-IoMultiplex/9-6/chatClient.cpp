@@ -87,11 +87,11 @@ int main(int argc,char *argv[])
         if(fds[0].revents & POLLIN)
         {
             // 使用splice将用户输入数据直接写到sockfd上(零拷贝)
-            printf("send data\n");
+            printf("send data process...\n");
             ret = splice(0,NULL,pipefd[1],NULL,32768,SPLICE_F_MORE | SPLICE_F_MOVE);
-            printf("std input bytes size = %d",ret);
+            printf("std input pipe bytes size = %d\n",ret);
             ret = splice(pipefd[0],NULL,sockfd,NULL,32768,SPLICE_F_MORE |SPLICE_F_MOVE);
-            printf("std output bytes size = %d",ret);
+            printf("std output socket bytes size = %d\n",ret);
         }
     }
 
