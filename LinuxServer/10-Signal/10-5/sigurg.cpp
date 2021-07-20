@@ -18,6 +18,7 @@ static int connfd;
 void sig_urg(int sig)
 {
     // 保证可重入
+    printf("enter sig function\n");
     int save_errno = errno;
     char buffer[BUF_SIZE];
     memset(buffer,'\0',BUF_SIZE);
@@ -41,7 +42,7 @@ int main(int argc,char* argv[])
 {
     if( argc <= 2 )
     {
-        printf( "parameter is error !");
+        printf( "parameter is error !\n");
         return 1;
     }
     const char* ip = argv[1];
