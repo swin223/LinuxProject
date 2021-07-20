@@ -8,8 +8,6 @@
 #include <errno.h>
 #include <string.h>
 
-#define BUF_SIZE 1024
-
 int main(int argc, char *argv[])
 {
     if(argc <= 2)
@@ -37,6 +35,9 @@ int main(int argc, char *argv[])
 
     struct sockaddr_in client;
     socklen_t client_addrlength = sizeof(client);
+
+    sleep(15);
+
     int connfd = accept(sock,(struct sockaddr*)&client,&client_addrlength);
     if(connfd < 0)
     {
@@ -45,9 +46,6 @@ int main(int argc, char *argv[])
     else
     {
         printf("connect sucess!\n");
-        char buffer[BUF_SIZE];
-        memset(buffer,'\0',BUF_SIZE);
-        sleep(3);
         close(connfd);
     }
 
