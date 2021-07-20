@@ -11,7 +11,7 @@ int main(int argc, char *argv[])
 {
     if(argc <= 2)
     {
-        printf("parameters is error!");
+        printf("parameters is error!\n");
         return 1;
     }
     const char *ip = argv[1];
@@ -31,8 +31,8 @@ int main(int argc, char *argv[])
     }
     else
     {
-        const char* oob_data = "this is oob data";
-        const char* normal_data = "this is normal data";
+        const char* oob_data = "this is oob data\n";
+        const char* normal_data = "this is normal data\n";
         send(sockfd,normal_data,strlen(normal_data),0);
         send(sockfd,oob_data,strlen(oob_data),MSG_OOB);
         send(sockfd,normal_data,strlen(normal_data),0);
